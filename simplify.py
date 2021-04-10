@@ -4,16 +4,16 @@ import csv
 from types import SimpleNamespace
 
 
-def has_crosswalk(_image):
-    labels = _image.labels
+def has_crosswalk(image):
+    labels = image.labels
     for label in labels:
         if label.category == "lane" and label.attributes.laneType == "crosswalk":
             return True
     return False
 
 
-def simplify_images(_images):
-    return list(map(lambda i: {"name": i.name, "has_crosswalks": has_crosswalk(i)}, _images))
+def simplify_images(images):
+    return list(map(lambda i: {"name": i.name, "has_crosswalks": has_crosswalk(i)}, images))
 
 
 def simplify_images_from_file(_file_name):
@@ -29,14 +29,14 @@ def get_simplified_images():
     return result
 
 
-def save_result_as_json(_simplified_images):
+def save_result_as_json(simplified_images):
     result_json_file = 'results/simplified.json'
     with open(result_json_file, 'w') as outfile:
-        json.dump(_simplified_images, outfile)
+        json.dump(simplified_images, outfile)
         print('Saved results as JSON file: ' + result_json_file)
 
 
-def save_results_as_csv(_simplified_images):
+def save_results_as_csv(simplified_images):
     result_csv_file = 'results/simplified.csv'
     with open(result_csv_file, 'w') as csv_output_file:
         writer = csv.writer(csv_output_file)
@@ -46,8 +46,12 @@ def save_results_as_csv(_simplified_images):
         print('Saved results as CSV file: ' + result_csv_file)
 
 
-if __name__ == "__main__":
+def main():
     simplified_images = get_simplified_images()
     save_result_as_json(simplified_images)
     save_results_as_csv(simplified_images)
     print('Result file contains ' + str(len(simplified_images)) + ' elements')
+
+
+if __name__ == "__main__":
+    main()
