@@ -2,32 +2,37 @@ import json
 import os
 
 from constants import FRAME_ATTRIBUTES
+from settings import PROCESSED_DATASET_PATH, PROCESSED_LABELS_FILEPATH
+from utils.utils import Utils
 
 
 class FrameAttributes:
-    log_name = '[DATA PREPARATION]'
-    subdirectory = 'frame_attributes'
+    log_name = '[DATA PREPARATION][FRAME ATTRIBUTES]'
 
-    destination_dataset_path = '/home/dominika/Documents/sem.1 mgr/SzUM/projekt/dataset/merged_dataset/labels'
+    merged_labels_filename = PROCESSED_LABELS_FILEPATH
+
+    destination_dataset_path = os.path.join(PROCESSED_DATASET_PATH, 'labels')
     destination_directories = ['grouped_by_frame_attributes']
-
-    images_list_filename = 'bdd100k_images_list.txt'
-    merged_labels_filename = 'bdd100k_labels_images.json'
 
     def __init__(self):
         self.group_by_frame_attributes()
 
     def group_by_frame_attributes(self):
+        print(f'{self.log_name} Grouping dataset by frame attributes values')
+
         self.__create_destination_directories()
-        frame_data_dict = self.__import_json_as_dict()
+        frame_data_list = self.__import_json_as_dict()
+        self.__split_frame_data_by_attributes_values(frame_data_list)
+
+        print(f'{self.log_name} Finished grouping dataset by frame attributes values')
 
     def __create_destination_directories(self):
-        path = os.path.join(self.destination_dataset_path, self.destination_dataset_path[0])
+        path = os.path.join(self.destination_dataset_path, self.destination_directories[0])
         print(f'{self.log_name} Creating destination directories in: ({path})')
 
         for subdirectory in FRAME_ATTRIBUTES.keys():
-            path = os.path.join(path, subdirectory)
-            os.makedirs(path, exist_ok=True)
+            final_path = os.path.join(path, subdirectory)
+            os.makedirs(final_path, exist_ok=True)
 
     def __import_json_as_dict(self):
         path = os.path.join(self.destination_dataset_path, self.merged_labels_filename)
@@ -35,5 +40,46 @@ class FrameAttributes:
         with open(path) as file:
             return json.load(file)
 
-    def __split_frame_data_by_attributes_values(self):
-        pass
+    def __split_frame_data_by_attributes_values(self, frame_data_dict_list):
+        print(f'{self.log_name} Splitting data by frame attributes values')
+
+        for attribute, attributes_values in FRAME_ATTRIBUTES.items():
+            for attribute_value in attributes_values:
+                dict_entries_list = []
+                for entry in frame_data_dict_list:
+                    frame_attributes = entry['attributes']
+                    if frame_attributes[attribute] == attribute_value:
+                        dict_entries_list.append(entry)
+
+                attribute_value = attribute_value.replace('/', '-') if '/' in attribute_value else attribute_value
+                self.__write_entries_list_by_frame_attribute_to_file(dict_entries_list, attribute, attribute_value)
+                self.__write_entries_list_statistics_to_file(dict_entries_list, attribute, attribute_value)
+
+    def __write_entries_list_by_frame_attribute_to_file(self, entries_list, attribute, attribute_value):
+        print(
+            f'{self.log_name} Writing filtered data to file for attribute [{attribute}] and value [{attribute_value}]')
+
+        path = os.path.join(self.destination_dataset_path, self.destination_directories[0])
+
+        filepath = os.path.join(attribute, f'{attribute_value}.json')
+        final_path = os.path.join(path, filepath)
+
+        with open(final_path, 'w+') as file:
+            json.dump(entries_list, file)
+
+    def __write_entries_list_statistics_to_file(self, entries_list, attribute, attribute_value):
+        print(
+            f'{self.log_name} Writing filtered data statistics to file for attribute [{attribute}] and value [{attribute_value}]')
+
+        path = os.path.join(self.destination_dataset_path, self.destination_directories[0])
+
+        filepath = os.path.join(attribute, f'{attribute_value}.txt')
+        final_path = os.path.join(path, filepath)
+
+        number_of_records = len(entries_list)
+        number_of_records_with_crosswalks, number_of_crosswalks = Utils.count_crosswalks_in_records_list(entries_list)
+
+        with open(final_path, 'w+') as file:
+            file.write(f'Number of records:\t{number_of_records}\n')
+            file.write(f'Number of records (images) with crosswalks:\t{number_of_records_with_crosswalks}\n')
+            file.write(f'Number of crosswalks in images:\t{number_of_crosswalks}\n')

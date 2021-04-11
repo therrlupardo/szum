@@ -41,7 +41,7 @@ def save_results_as_csv(simplified_images):
     with open(result_csv_file, 'w') as csv_output_file:
         writer = csv.writer(csv_output_file)
         writer.writerow(['Name', 'Has crosswalk'])
-        for image in _simplified_images:
+        for image in simplified_images:
             writer.writerow([image['name'], image['has_crosswalks']])
         print('Saved results as CSV file: ' + result_csv_file)
 
