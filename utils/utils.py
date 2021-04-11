@@ -30,3 +30,11 @@ class Utils:
     def write_line_to_file(line, path):
         with open(path, 'a+') as file:
             file.write(line)
+
+    @staticmethod
+    def label_contains_crosswalk_category(label_dict_entry):
+        labels = label_dict_entry['labels']
+        for label in labels:
+            if label['category'] == 'lane' and label['attributes']['laneType'] == 'crosswalk':
+                return True
+        return False

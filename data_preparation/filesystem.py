@@ -25,7 +25,7 @@ class Filesystem:
     file_extensions = ['*.jpg', '*.json']
 
     def __init__(self):
-        self.merge_split_dataset()
+        pass
 
     def merge_split_dataset(self):
         print(f'{self.log_name} Merging dataset')
@@ -39,9 +39,10 @@ class Filesystem:
         labels = self.__search_files_in_source_directory(self.file_extensions[1])
         self.__merge_labels_files_in_destination_directory(labels, self.destination_directories[1])
 
-        images_with_labels = self.__load_merge_and_split_dataset(self.destination_directories[1], self.destination_directories[0])
-        print(images_with_labels)
+        images_with_labels = self.__load_merge_and_split_dataset(self.destination_directories[1],
+                                                                 self.destination_directories[0])
         print(f'{self.log_name} Finished merging dataset')
+        return images_with_labels
 
     def __create_destination_directories(self):
         print(f'{self.log_name} Creating destination directories in: ({self.destination_dataset_path})')
@@ -114,16 +115,17 @@ class Filesystem:
 
         for image in images:
             image_path = os.path.join(self.destination_dataset_path, subdirectory_images)
-            img = np.array(Image.open(image_path + "/" + image['name']))
+            img = np.array(Image.open(os.path.join(image_path, image['name'])))
             crosswalk_label = 0
             if image['has_crosswalks']:
                 crosswalk_label = 1
             whole_set.append([img, crosswalk_label])
         return whole_set
 
-    def __save_normalized_data(self, images, path, resolution, quality):
+    @staticmethod
+    def __save_normalized_data(images, path, resolution, quality):
         for image in images:
-            file_path = path + "/" + os.path.split(image)[-1]
+            file_path = os.path.join(path, os.path.split(image)[-1])
             img = Image.open(image)
             img.thumbnail((resolution, resolution))
             img.save(file_path, optimize=True, quality=quality)
