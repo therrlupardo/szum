@@ -1,13 +1,12 @@
 import fnmatch
 import json
 import os
-import numpy as np
 import shutil
+
 from PIL import Image
 
 from settings import RAW_DATASET_PATH, PROCESSED_DATASET_PATH, IMAGES_FILENAMES_FILEPATH, PROCESSED_LABELS_FILEPATH, \
     UNIQUE_IMAGES_FILENAMES_FILEPATH
-from simplify import simplify_images_from_file, has_crosswalk
 
 
 class Filesystem:
@@ -39,10 +38,7 @@ class Filesystem:
         labels = self.__search_files_in_source_directory(self.file_extensions[1])
         self.__merge_labels_files_in_destination_directory(labels, self.destination_directories[1])
 
-        images_with_labels = self.__load_merge_and_split_dataset(self.destination_directories[1],
-                                                                 self.destination_directories[0])
         print(f'{self.log_name} Finished merging dataset')
-        return images_with_labels
 
     def __create_destination_directories(self):
         print(f'{self.log_name} Creating destination directories in: ({self.destination_dataset_path})')
@@ -71,7 +67,7 @@ class Filesystem:
         print(f'{self.log_name} Copying files to destination directory: ({path})')
 
         if data_normalization_enabled:
-            self.__save_normalized_data(files, path, 600, 65)
+            self.__save_normalized_data(files, path, 128, 80)
         else:
             for file in files:
                 shutil.copy2(file, path)
@@ -107,20 +103,6 @@ class Filesystem:
 
         with open(destination_path, 'w+') as destination:
             json.dump(entries_list, destination)
-
-    def __load_merge_and_split_dataset(self, subdirectory_label, subdirectory_images):
-        destination_path = os.path.join(self.destination_dataset_path, subdirectory_label, self.merged_labels_filename)
-        images = simplify_images_from_file(destination_path)
-        whole_set = []
-
-        for image in images:
-            image_path = os.path.join(self.destination_dataset_path, subdirectory_images)
-            img = np.array(Image.open(os.path.join(image_path, image['name'])))
-            crosswalk_label = 0
-            if image['has_crosswalks']:
-                crosswalk_label = 1
-            whole_set.append([img, crosswalk_label])
-        return whole_set
 
     @staticmethod
     def __save_normalized_data(images, path, resolution, quality):
