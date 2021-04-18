@@ -1,3 +1,5 @@
 #!/bin/bash
 
-rm -rf ./venv
+directory="${0%/*}"
+
+rm -rf "$directory"/venv

@@ -1,3 +1,5 @@
 #!/bin/bash
 
-source ./venv/bin/activate
+directory="${0%/*}"
+
+source "$directory"/venv/bin/activate

@@ -1,9 +1,10 @@
 #!/bin/bash
 
+directory="${0%/*}"
+
 sudo apt-get install -y python3-venv
+python3 -m venv "$directory"/venv
 
-python3 -m venv ./venv
-
-source ./venv/bin/activate
-pip3 install -r requirements.txt
+source "$directory"/venv/bin/activate
+pip3 install -r "$directory"/requirements.txt
 deactivate
