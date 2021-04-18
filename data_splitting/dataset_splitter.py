@@ -1,15 +1,13 @@
-import json
 import os
 
 import numpy as np
 from tensorflow import keras
 
 from settings import PROCESSED_LABELS_FILEPATH, PROCESSED_DATASET_PATH
-from utils.utils import Utils
 
 
-class DataSplit:
-    log_name = '[DATA PREPARATION][FRAME ATTRIBUTES]'
+class DatasetSplitter:
+    log_name = '[DATA SPLITTING][DATASET SPLITTER]'
 
     merged_labels_filename = PROCESSED_LABELS_FILEPATH
     destination_dataset_path = os.path.join(PROCESSED_DATASET_PATH, 'labels')
@@ -19,11 +17,20 @@ class DataSplit:
     test_set_size = train_set_size - val_set_size
 
     def __init__(self, dataset):
-        self.split1(dataset)
-        self.split2(dataset)
-        self.split3(dataset)
+        self.prepare_dataset_split(dataset)
+
+    def prepare_dataset_split(self, dataset):
+        # _, y_train_set, _, y_validate_set, _, y_test_set = self.split1(dataset)
+        # _, _, y_train_set, _, y_validate_set, _, y_test_set = self.split2(dataset)
+        _, _, y_train_set, _, y_validate_set, _, y_test_set = self.split3(dataset)
+
+        print(f'Train set size:\t{len(y_train_set)}')
+        print(f'Validate set size:\t{len(y_validate_set)}')
+        print(f'Test set size:\t{len(y_test_set)}')
 
     def split1(self, entries_list, shuffle_datasets=True, merge_datasets=False):
+        print(f'{self.log_name} Splitting dataset into split1')
+
         dataset_size = len(entries_list)
         train_set_size = int(dataset_size * self.train_set_size)
         val_set_size = int(dataset_size * self.val_set_size)
@@ -44,9 +51,13 @@ class DataSplit:
         x_validate_set, y_validate_set = self.__split_dataset_into_xy(val_set)
         x_test_set, y_test_set = self.__split_dataset_into_xy(test_set)
 
+        print(f'{self.log_name} Finished splitting dataset into split1')
+
         return x_train_set, y_train_set, x_validate_set, y_validate_set, x_test_set, y_test_set
 
     def split2(self, entries_list, shuffle_datasets=True, merge_datasets=False):
+        print(f'{self.log_name} Splitting dataset into split2')
+
         dict_entries_list = self.__balance_dataset(entries_list)
 
         x_train_set, y_train_set, x_validate_set, y_validate_set, x_test_set, y_test_set = self.split1(
@@ -61,35 +72,35 @@ class DataSplit:
         self.__augment_dataset(data_generator, x_validate_set)
         self.__augment_dataset(data_generator, x_test_set)
 
+        print(f'{self.log_name} Finished splitting dataset into split2')
+
         return data_generator, x_train_set, y_train_set, x_validate_set, y_validate_set, x_test_set, y_test_set
 
     def split3(self, entries_list, shuffle_datasets=True):
-        return self.split2(entries_list, shuffle_datasets, merge_datasets=True)
+        print(f'{self.log_name} Splitting dataset into split3')
+
+        dataset = self.split2(entries_list, shuffle_datasets, merge_datasets=True)
+
+        print(f'{self.log_name} Finished splitting dataset into split2')
+        return dataset
 
     @staticmethod
-    def __augment_dataset(data_generator, dataset):
-        data_generator.fit(dataset)
+    def __get_list_subset(entries_list, start, end):
+        return entries_list[start:end]
 
     @staticmethod
-    def __create_image_data_generator():
-        image_shift = 0.1
-        image_rotation = 20
+    def __split_dataset_into_xy(dataset):
+        x_set = [elem[0] for elem in dataset]
+        y_set = [elem[1] for elem in dataset]
 
-        data_generator = keras.preprocessing.image.ImageDataGenerator(featurewise_center=False,
-                                                                      featurewise_std_normalization=False,
-                                                                      height_shift_range=image_shift,
-                                                                      horizontal_flip=True,
-                                                                      rotation_range=image_rotation,
-                                                                      width_shift_range=image_shift,
-                                                                      zca_whitening=False)
-        return data_generator
+        return np.array(x_set), np.array(y_set)
 
     def __balance_dataset(self, dataset):
         crosswalk_entries = []
         no_crosswalk_entries = []
 
         for entry in dataset:
-            if Utils.label_contains_crosswalk_category(entry):
+            if entry[1] == 'True':
                 crosswalk_entries.append(entry)
             else:
                 no_crosswalk_entries.append(entry)
@@ -105,26 +116,27 @@ class DataSplit:
         return balanced_dataset
 
     @staticmethod
-    def __split_dataset_into_xy(dataset):
-        x_set = [elem[0] for elem in dataset]
-        y_set = [elem[1] for elem in dataset]
+    def __create_image_data_generator():
+        image_shift = 0.1
+        image_rotation = 20
 
-        return np.array(x_set), np.array(y_set)
-
-    @staticmethod
-    def __get_list_subset(entries_list, start, end):
-        return entries_list[start:end]
-
-    def __get_labels_as_list_of_dicts(self):
-        path = os.path.join(self.destination_dataset_path, self.merged_labels_filename)
-
-        with open(path) as file:
-            dict_entries_list = json.load(file)
-
-        return dict_entries_list
+        data_generator = keras.preprocessing.image.ImageDataGenerator(featurewise_center=False,
+                                                                      featurewise_std_normalization=False,
+                                                                      height_shift_range=image_shift,
+                                                                      horizontal_flip=True,
+                                                                      rotation_range=image_rotation,
+                                                                      width_shift_range=image_shift,
+                                                                      zca_whitening=False)
+        return data_generator
 
     @staticmethod
     def normalize(dataset):
         mean = np.mean(dataset)
         std_dev = np.std(dataset)
-        return (dataset - mean) / std_dev
+        normalized_dataset = (dataset - mean) / std_dev
+
+        return normalized_dataset
+
+    @staticmethod
+    def __augment_dataset(data_generator, dataset):
+        data_generator.fit(dataset)

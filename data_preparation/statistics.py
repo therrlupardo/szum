@@ -1,7 +1,7 @@
 import json
 import os
 
-from constants import LABEL_CATEGORIES
+from utils.constants import LABEL_CATEGORIES
 from settings import PROCESSED_DATASET_PATH, IMAGES_FILENAMES_FILEPATH, PROCESSED_LABELS_FILEPATH, STATISTICS_FILEPATH
 from utils.utils import Utils
 
@@ -50,9 +50,25 @@ class Statistics:
 
         return number_of_files_string
 
+    def __get_number_of_crosswalks(self):
+        print(f'{self.log_name} Getting number of crosswalks statistics')
+
+        path = os.path.join(self.destination_dataset_path, self.destination_directories[0])
+        dict_entries_list = Utils.import_json_as_dict(path, self.merged_labels_filename)
+
+        number_of_records_with_crosswalks, number_of_crosswalks = Utils.count_crosswalks_in_records_list(
+            dict_entries_list)
+
+        number_of_crosswalks_string = f'Number of records (images) with crosswalks:\t{number_of_records_with_crosswalks}\n'
+        number_of_crosswalks_string += f'Number of crosswalks in images:\t{number_of_crosswalks}\n'
+
+        return number_of_crosswalks_string
+
     def __get_categories_statistics(self):
         print(f'{self.log_name} Getting categories statistics')
-        dict_entries_list = self.__get_labels_dict_entries_list()
+
+        path = os.path.join(self.destination_dataset_path, self.destination_directories[0])
+        dict_entries_list = Utils.import_json_as_dict(path, self.merged_labels_filename)
 
         records_in_categories = dict((category, 0) for category in LABEL_CATEGORIES)
         objects_in_categories = dict((category, 0) for category in LABEL_CATEGORIES)
@@ -69,24 +85,3 @@ class Statistics:
         statistics += f'Number of objects in each category:\n{json.dumps(objects_in_categories, indent=4)}\n'
 
         return statistics
-
-    def __get_number_of_crosswalks(self):
-        print(f'{self.log_name} Getting number of crosswalks statistics')
-
-        dict_entries_list = self.__get_labels_dict_entries_list()
-
-        number_of_records_with_crosswalks, number_of_crosswalks = Utils.count_crosswalks_in_records_list(
-            dict_entries_list)
-
-        number_of_crosswalks_string = f'Number of records (images) with crosswalks:\t{number_of_records_with_crosswalks}\n'
-        number_of_crosswalks_string += f'Number of crosswalks in images:\t{number_of_crosswalks}\n'
-
-        return number_of_crosswalks_string
-
-    def __get_labels_dict_entries_list(self):
-        path = os.path.join(self.destination_dataset_path, self.destination_directories[0], self.merged_labels_filename)
-
-        with open(path) as file:
-            dict_entries_list = json.load(file)
-
-        return dict_entries_list

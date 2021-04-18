@@ -1,7 +1,6 @@
-import json
 import os
 
-from constants import FRAME_ATTRIBUTES
+from utils.constants import FRAME_ATTRIBUTES
 from settings import PROCESSED_DATASET_PATH, PROCESSED_LABELS_FILEPATH
 from utils.utils import Utils
 
@@ -21,7 +20,7 @@ class FrameAttributes:
         print(f'{self.log_name} Grouping dataset by frame attributes values')
 
         self.__create_destination_directories()
-        frame_data_list = self.__import_json_as_dict()
+        frame_data_list = Utils.import_json_as_dict(self.destination_dataset_path, self.merged_labels_filename)
         self.__split_frame_data_by_attributes_values(frame_data_list)
 
         print(f'{self.log_name} Finished grouping dataset by frame attributes values')
@@ -33,12 +32,6 @@ class FrameAttributes:
         for subdirectory in FRAME_ATTRIBUTES.keys():
             final_path = os.path.join(path, subdirectory)
             os.makedirs(final_path, exist_ok=True)
-
-    def __import_json_as_dict(self):
-        path = os.path.join(self.destination_dataset_path, self.merged_labels_filename)
-
-        with open(path) as file:
-            return json.load(file)
 
     def __split_frame_data_by_attributes_values(self, frame_data_dict_list):
         print(f'{self.log_name} Splitting data by frame attributes values')
@@ -64,8 +57,7 @@ class FrameAttributes:
         filepath = os.path.join(attribute, f'{attribute_value}.json')
         final_path = os.path.join(path, filepath)
 
-        with open(final_path, 'w+') as file:
-            json.dump(entries_list, file)
+        Utils.export_dict_as_json(final_path, entries_list)
 
     def __write_entries_list_statistics_to_file(self, entries_list, attribute, attribute_value):
         print(

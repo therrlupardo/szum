@@ -7,6 +7,7 @@ from PIL import Image
 
 from settings import RAW_DATASET_PATH, PROCESSED_DATASET_PATH, IMAGES_FILENAMES_FILEPATH, PROCESSED_LABELS_FILEPATH, \
     UNIQUE_IMAGES_FILENAMES_FILEPATH
+from utils.utils import Utils
 
 
 class Filesystem:
@@ -24,7 +25,7 @@ class Filesystem:
     file_extensions = ['*.jpg', '*.json']
 
     def __init__(self):
-        pass
+        self.merge_split_dataset()
 
     def merge_split_dataset(self):
         print(f'{self.log_name} Merging dataset')
@@ -32,7 +33,7 @@ class Filesystem:
         self.__create_destination_directories()
 
         images = self.__search_files_in_source_directory(self.file_extensions[0])
-        self.__copy_files_to_destination_directory(images, self.destination_directories[0], True)
+        self.__copy_files_to_destination_directory(images, self.destination_directories[0])
         self.__write_filenames_to_file_in_destination_directory(images)
 
         labels = self.__search_files_in_source_directory(self.file_extensions[1])
@@ -62,15 +63,28 @@ class Filesystem:
 
         return matches
 
-    def __copy_files_to_destination_directory(self, files, subdirectory, data_normalization_enabled):
+    def __copy_files_to_destination_directory(self, files, subdirectory, scale_data=True):
         path = os.path.join(self.destination_dataset_path, subdirectory)
         print(f'{self.log_name} Copying files to destination directory: ({path})')
 
-        if data_normalization_enabled:
-            self.__save_normalized_data(files, path, 128, 80)
+        if scale_data:
+            self.__save_scaled_data(files, path, 128, 80)
         else:
-            for file in files:
-                shutil.copy2(file, path)
+            self.__save_copied_data(files, path)
+
+    @staticmethod
+    def __save_scaled_data(images_paths, destination_path, resolution, quality):
+        for image_path in images_paths:
+            image = Image.open(image_path)
+            image.thumbnail((resolution, resolution))
+
+            new_file_path = os.path.join(destination_path, os.path.basename(image_path))
+            image.save(new_file_path, optimize=True, quality=quality)
+
+    @staticmethod
+    def __save_copied_data(images_paths, destination_path):
+        for image_path in images_paths:
+            shutil.copy2(image_path, destination_path)
 
     def __write_filenames_to_file_in_destination_directory(self, files):
         path = os.path.join(self.destination_dataset_path, self.images_list_filename)
@@ -78,7 +92,7 @@ class Filesystem:
 
         with open(path, 'w+') as f:
             for file in files:
-                filename = os.path.split(file)[-1]
+                filename = os.path.basename(file)
                 f.write(f'{filename}\n')
 
         path = os.path.join(self.destination_dataset_path, self.unique_images_list_filename)
@@ -88,7 +102,7 @@ class Filesystem:
 
         with open(path, 'w+') as f:
             for file in files:
-                filename = os.path.split(file)[-1]
+                filename = os.path.basename(file)
                 f.write(f'{filename}\n')
 
     def __merge_labels_files_in_destination_directory(self, files, subdirectory):
@@ -101,13 +115,4 @@ class Filesystem:
                 file_content = json.load(source)
                 entries_list.extend(file_content)
 
-        with open(destination_path, 'w+') as destination:
-            json.dump(entries_list, destination)
-
-    @staticmethod
-    def __save_normalized_data(images, path, resolution, quality):
-        for image in images:
-            file_path = os.path.join(path, os.path.split(image)[-1])
-            img = Image.open(image)
-            img.thumbnail((resolution, resolution))
-            img.save(file_path, optimize=True, quality=quality)
+        Utils.export_dict_as_json(destination_path, entries_list)
