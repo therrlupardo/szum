@@ -25,8 +25,7 @@ class DatasetSplitter:
         # _, _, y_train_set, _, y_validate_set, _, y_test_set = self.split2(dataset)
         data_generator, x_train_set, y_train_set, _, y_validate_set, _, y_test_set = self.split3(dataset)
 
-        for elem in x_train_set:
-            self.__plot_augmented_data(data_generator, elem)
+        self.__plot_augmented_data(data_generator, x_train_set[0])
 
         print(f'Train set size:\t{len(y_train_set)}')
         print(f'Validate set size:\t{len(y_validate_set)}')
