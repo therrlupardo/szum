@@ -16,6 +16,7 @@ class DatasetLoader:
 
     def get_dataset(self):
         dataset_data = self.__load_dataset_data()
+        # dataset_data = dataset_data[:200]
         dataset = self.__load_dataset(dataset_data)
 
         return dataset
@@ -37,10 +38,11 @@ class DatasetLoader:
         counter = 0
         for data in dataset_data:
             filename = data[0]
+            category = 0 if data[1] == 'False' else 1
             print(f'{self.log_name} Loading #{counter} image: ({filename})')
 
             image = self.__load_image(filename)
-            dataset.append((image, data[1]))
+            dataset.append((image, category))
             counter += 1
 
         return dataset

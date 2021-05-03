@@ -17,15 +17,16 @@ class DatasetSplitter:
     val_set_size = 0.1
     test_set_size = train_set_size - val_set_size
 
-    def __init__(self, dataset):
-        self.prepare_dataset_split(dataset)
+    def __init__(self, dataset=None):
+        if dataset:
+            self.prepare_dataset_split(dataset)
 
     def prepare_dataset_split(self, dataset):
         # _, y_train_set, _, y_validate_set, _, y_test_set = self.split1(dataset)
         # _, _, y_train_set, _, y_validate_set, _, y_test_set = self.split2(dataset)
         data_generator, x_train_set, y_train_set, _, y_validate_set, _, y_test_set = self.split3(dataset)
 
-        self.__plot_augmented_data(data_generator, x_train_set[0])
+        # self.__plot_augmented_data(data_generator, x_train_set[0])
 
         print(f'Train set size:\t{len(y_train_set)}')
         print(f'Validate set size:\t{len(y_validate_set)}')
