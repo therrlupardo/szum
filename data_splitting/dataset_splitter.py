@@ -24,7 +24,7 @@ class DatasetSplitter:
     def prepare_dataset_split(self, dataset):
         # _, y_train_set, _, y_validate_set, _, y_test_set = self.split1(dataset)
         # _, _, y_train_set, _, y_validate_set, _, y_test_set = self.split2(dataset)
-        data_generator, x_train_set, y_train_set, _, y_validate_set, _, y_test_set = self.split3(dataset)
+        data_generator, _, y_train_set, _, y_validate_set, _, y_test_set = self.split3(dataset)
 
         # self.__plot_augmented_data(data_generator, x_train_set[0])
 
@@ -92,9 +92,7 @@ class DatasetSplitter:
         x_test_set = self.normalize(x_test_set)
 
         data_generator = self.__create_image_data_generator()
-        self.__augment_dataset(data_generator, x_train_set)
-        self.__augment_dataset(data_generator, x_validate_set)
-        self.__augment_dataset(data_generator, x_test_set)
+        data_generator = self.__augment_dataset(data_generator, x_train_set)
 
         print(f'{self.log_name} Finished splitting dataset into split2')
 
@@ -124,7 +122,7 @@ class DatasetSplitter:
         no_crosswalk_entries = []
 
         for entry in dataset:
-            if entry[1] == 'True':
+            if entry[1] == 'True' or entry[1] == 1:
                 crosswalk_entries.append(entry)
             else:
                 no_crosswalk_entries.append(entry)
@@ -137,6 +135,7 @@ class DatasetSplitter:
             crosswalk_entries = self.__get_list_subset(crosswalk_entries, 0, records_count)
 
         balanced_dataset = crosswalk_entries + no_crosswalk_entries
+        np.random.shuffle(balanced_dataset)
         return balanced_dataset
 
     @staticmethod
@@ -177,3 +176,4 @@ class DatasetSplitter:
     @staticmethod
     def __augment_dataset(data_generator, dataset):
         data_generator.fit(dataset)
+        return data_generator

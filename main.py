@@ -24,9 +24,14 @@ def data_training():
     dataset = dataset_loader.get_dataset()
 
     dataset_splitter = DatasetSplitter()
-    split1_dataset = dataset_splitter.split1(dataset)
+    # split1_dataset = dataset_splitter.split1(dataset)
+    split2_dataset = dataset_splitter.split2(dataset)
 
-    images_classifier = ImagesClassifier(*split1_dataset)
+    data_generator, x_train_set, y_train_set, x_validate_set, y_validate_set, x_test_set, y_test_set = split2_dataset
+    #
+    # images_classifier = ImagesClassifier(*split1_dataset)
+    images_classifier = ImagesClassifier(x_train_set, y_train_set, x_validate_set, y_validate_set, x_test_set,
+                                         y_test_set, generator=data_generator)
 
     # split2_dataset = dataset_splitter.split2(dataset)
     # split3_dataset = dataset_splitter.split3(dataset)
