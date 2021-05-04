@@ -8,4 +8,4 @@ PROCESSED_LABELS_FILEPATH = 'bdd100k_labels_images.json'
 STATISTICS_FILEPATH = 'statistics.txt'
 DATA_REPRESENTATION_DIR = 'data_representation'
 
-MODEL_FILENAME = 'model1'
+MODEL_FILENAME = 'model1-80k-epoch5'

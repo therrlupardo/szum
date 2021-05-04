@@ -92,7 +92,7 @@ class DatasetSplitter:
         x_test_set = self.normalize(x_test_set)
 
         data_generator = self.__create_image_data_generator()
-        data_generator = self.__augment_dataset(data_generator, x_train_set)
+        # data_generator = self.__augment_dataset(data_generator, x_train_set)
 
         print(f'{self.log_name} Finished splitting dataset into split2')
 

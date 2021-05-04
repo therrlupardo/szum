@@ -16,7 +16,7 @@ class DatasetLoader:
 
     def get_dataset(self):
         dataset_data = self.__load_dataset_data()
-        dataset_data = dataset_data[:200]
+        # dataset_data = dataset_data[:200]
         dataset = self.__load_dataset(dataset_data)
 
         return dataset
