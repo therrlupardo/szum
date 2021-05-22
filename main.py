@@ -25,21 +25,46 @@ def data_training():
 
     dataset_splitter = DatasetSplitter()
 
-    # for split1
+    images_classifier = ImagesClassifier(
+        '/home/dominika/Documents/sem.1 mgr/SzUM/projekt/szum_crosswalk_detection/model1-80k-epoch5')
+
+    use_split1(dataset, dataset_splitter, images_classifier, create_model=False)
+    # use_split2(dataset, dataset_splitter, images_classifier)
+    # use_split3(dataset, dataset_splitter, images_classifier)
+
+
+def use_split1(dataset, dataset_splitter: DatasetSplitter, images_classifier: ImagesClassifier, create_model=True):
     split1_dataset = dataset_splitter.split1(dataset)
-    images_classifier = ImagesClassifier(*split1_dataset)
 
-    # for split2
-    # split2_dataset = dataset_splitter.split2(dataset)
-    # data_generator, x_train_set, y_train_set, x_validate_set, y_validate_set, x_test_set, y_test_set = split2_dataset
-    # images_classifier = ImagesClassifier(x_train_set, y_train_set, x_validate_set, y_validate_set, x_test_set,
-    #                                      y_test_set, generator=data_generator)
+    if create_model:
+        images_classifier.create_model(*split1_dataset)
+    else:
+        _, _, _, _, x_test_set, y_test_set = split1_dataset
+        images_classifier.use_model(x_test_set, y_test_set)
 
-    # for split3
-    # split3_dataset = dataset_splitter.split3(dataset)
-    # data_generator, x_train_set, y_train_set, x_validate_set, y_validate_set, x_test_set, y_test_set = split3_dataset
-    # images_classifier = ImagesClassifier(x_train_set, y_train_set, x_validate_set, y_validate_set, x_test_set,
-    #                                      y_test_set, generator=data_generator)
+
+def use_split2(dataset, dataset_splitter: DatasetSplitter, images_classifier: ImagesClassifier, create_model=True):
+    split2_dataset = dataset_splitter.split2(dataset)
+
+    if create_model:
+        data_generator, x_train_set, y_train_set, x_validate_set, y_validate_set, x_test_set, y_test_set = split2_dataset
+        images_classifier.create_model(x_train_set, y_train_set, x_validate_set, y_validate_set, x_test_set, y_test_set,
+                                       generator=data_generator)
+    else:
+        _, _, _, _, x_test_set, y_test_set, _ = split2_dataset
+        images_classifier.use_model(x_test_set, y_test_set)
+
+
+def use_split3(dataset, dataset_splitter: DatasetSplitter, images_classifier: ImagesClassifier, create_model=True):
+    split3_dataset = dataset_splitter.split3(dataset)
+
+    if create_model:
+        data_generator, x_train_set, y_train_set, x_validate_set, y_validate_set, x_test_set, y_test_set = split3_dataset
+        images_classifier.create_model(x_train_set, y_train_set, x_validate_set, y_validate_set, x_test_set, y_test_set,
+                                       generator=data_generator)
+    else:
+        _, _, _, _, x_test_set, y_test_set, _ = split3_dataset
+        images_classifier.use_model(x_test_set, y_test_set)
 
 
 def main():

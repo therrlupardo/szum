@@ -11,18 +11,26 @@ from tensorflow.keras.utils import to_categorical
 from tensorflow.python.keras.layers import Dense, Flatten, Softmax
 from tensorflow.python.keras.regularizers import L1L2
 
-from settings import MODEL_FILENAME
-
 
 class ImagesClassifier:
     log_name = '[DATA TRAINING][IMAGE CLASSIFIER]'
 
     batch_size = 1024
     epochs = 5
-    model_filename = MODEL_FILENAME
 
-    def __init__(self, x_train_set, y_train_set, x_validate_set, y_validate_set, x_test_set, y_test_set,
-                 generator=None):
+    def __init__(self, model_filename):
+        self.model_filename = model_filename
+        self.generator = None
+
+        self.x_train_set = None
+        self.y_train_set = None
+        self.x_validate_set = None
+        self.y_validate_set = None
+        self.x_test_set = None
+        self.y_test_set = None
+
+    def create_model(self, x_train_set, y_train_set, x_validate_set, y_validate_set, x_test_set, y_test_set,
+                     generator=None):
         self.generator = generator
 
         self.x_train_set = x_train_set
@@ -32,9 +40,15 @@ class ImagesClassifier:
         self.x_test_set = x_test_set
         self.y_test_set = y_test_set
 
-        self.__classify()
+        model = self.__create_classification_model()
+        self.__save_model(model)
 
-    def __classify(self):
+    def use_model(self, x_dataset, y_dataset):
+        model = self.__load_model()
+        self.__use_classification_model(model, x_dataset, y_dataset)
+        pass
+
+    def __create_classification_model(self):
         print(f'{self.log_name} Starting image classification')
 
         self.__flatten_datasets()
@@ -42,10 +56,23 @@ class ImagesClassifier:
         input_shape = self.__get_input_dataset_shape(self.x_train_set)
         model = self.__create_model(input_shape)
 
-        self.__train_model(model, self.generator, self.x_train_set, self.y_train_set, self.x_validate_set,
-                           self.y_validate_set, self.x_test_set, self.y_test_set)
+        model = self.__train_model(model, self.generator, self.x_train_set, self.y_train_set, self.x_validate_set,
+                                   self.y_validate_set, self.x_test_set, self.y_test_set)
 
         print(f'{self.log_name} Finished image classification')
+        return model
+
+    def __use_classification_model(self, model: Model, x_dataset, y_dataset):
+        print(f'{self.log_name} Starting test image classification')
+
+        y_dataset = self.__flatten_y_dataset(y_dataset)
+
+        print(f'{self.log_name} Started prediction on loaded model')
+        self.__evaluate_model(model, x_dataset, y_dataset)
+        self.__predict_model(model, x_dataset, y_dataset)
+        print(f'{self.log_name} Finished prediction on loaded model')
+
+        print(f'{self.log_name} Finished test image classification')
 
     def __flatten_datasets(self):
         print(f'{self.log_name} Flattening datasets')
@@ -85,23 +112,14 @@ class ImagesClassifier:
         x = base_model(inputs, training=True)
 
         x = Flatten()(x)
-        # x = ReLU()(x)
-        # x = Dense(1024, activation='relu')(x)
-        # x = Dense(1024)(x)
-        # + 2 dense, output-_dim = 1024,
-
-        x = Dense(2,  # output dim is 2, one score per each class
-                  # activation='sigmoid',
-                  kernel_regularizer=L1L2(l1=0.0, l2=0.1),
-                  # input_dim=features_number
-                  )(x)
-
+        x = Dense(2, kernel_regularizer=L1L2(l1=0.0, l2=0.1))(x)
         outputs = Softmax()(x)
 
         model = Model(inputs, outputs)
-        model.compile(optimizer='adam',
+        model.compile(optimizer=tf.keras.optimizers.Adam(),
                       loss='binary_crossentropy',
-                      metrics=['binary_accuracy', tf.keras.metrics.BinaryCrossentropy()])
+                      metrics=[tf.keras.metrics.BinaryAccuracy(), tf.keras.metrics.BinaryCrossentropy(),
+                               tf.keras.metrics.AUC(), tf.keras.metrics.Precision(), tf.keras.metrics.Recall()])
 
         return model
 
@@ -118,14 +136,16 @@ class ImagesClassifier:
                                               batch_size=self.batch_size, epochs=self.epochs)
 
         print(f'{self.log_name} Started prediction on testing set')
-        # self.__evaluate_model(model, x_test_set, y_test_set)
+        self.__evaluate_model(model, x_test_set, y_test_set)
         self.__predict_model(model, x_test_set, y_test_set)
         print(f'{self.log_name} Finished prediction on testing set')
 
         elapsed_time = timer() - start_time
-        print(f'{self.log_name} Finished training on training set with elapsed time: ({elapsed_time:0.2f} seconds)')
+        print(
+            f'{self.log_name} Finished training on training set with elapsed time: ({elapsed_time:0.2f} seconds) or ({elapsed_time / 60:0.2f} minutes)')
         self.__plot_training_statistics(history)
-        self.__save_model(model)
+
+        return model
 
     @staticmethod
     def __fit_model(model: Model, x_train_dataset, y_train_dataset, x_val_dataset, y_val_dataset,
@@ -154,8 +174,9 @@ class ImagesClassifier:
         y_dataset = [np.argmax(y) for y in y_dataset]
         predictions = [np.argmax(prediction) for prediction in predictions]
         self.__get_classification_report(y_dataset, predictions)
-        self.__plot_confusion_matrix(y_dataset, predictions)
+        self.__get_confusion_matrix(y_dataset, predictions)
         self.__plot_receiver_operating_characteristic(y_dataset, predictions)
+        self.__get_model_metrics_from_predictions(y_dataset, predictions)
 
     @staticmethod
     def __convert_prediction_probabilities_to_classes(prediction_probabilities):
@@ -166,15 +187,44 @@ class ImagesClassifier:
         print(f'{self.log_name} Classification report:')
         print(f'{metrics.classification_report(y_dataset, predictions)}')
 
-    def __plot_confusion_matrix(self, y_dataset, predictions):
+    def __get_confusion_matrix(self, y_dataset, predictions):
         confusion_matrix = metrics.confusion_matrix(y_dataset, predictions)
         print(f'{self.log_name} Confusion matrix:')
         print(f'{confusion_matrix}')
 
+    def __get_model_metrics_from_predictions(self, y_dataset, predictions):
+        precision_metric = tf.keras.metrics.Precision()
+        recall_metric = tf.keras.metrics.Recall()
+
+        precision_metric.update_state(y_dataset, predictions)
+        recall_metric.update_state(y_dataset, predictions)
+        _, _, area_under_curve_metric = self.__calculate_receiver_operating_characteristic(y_dataset, predictions)
+
+        precision_metric = precision_metric.result().numpy()
+        recall_metric = recall_metric.result().numpy()
+
+        f2_score_metric = self.__calculate_f_score_metric(precision_metric, recall_metric, beta=2)
+
+        print(f'{self.log_name} Precision: {precision_metric}')
+        print(f'{self.log_name} Recall: {recall_metric}')
+        print(f'{self.log_name} F2 score: {f2_score_metric}')
+        print(f'{self.log_name} Area under curve: {area_under_curve_metric:0.3f}')
+
     @staticmethod
-    def __plot_receiver_operating_characteristic(y_dataset, predictions):
-        false_positive_rates, true_positive_rates, thresholds = roc_curve(y_dataset, predictions)
+    def __calculate_f_score_metric(precision, recall, beta=1):
+        f_score = (1 + beta * beta) * (precision * recall) / (beta * beta * precision + recall)
+        return f_score
+
+    @staticmethod
+    def __calculate_receiver_operating_characteristic(y_dataset, predictions):
+        false_positive_rates, true_positive_rates, _ = roc_curve(y_dataset, predictions)
         area_under_curve = auc(false_positive_rates, true_positive_rates)
+
+        return false_positive_rates, true_positive_rates, area_under_curve
+
+    def __plot_receiver_operating_characteristic(self, y_dataset, predictions):
+        false_positive_rates, true_positive_rates, area_under_curve = self.__calculate_receiver_operating_characteristic(
+            y_dataset, predictions)
 
         plt.figure(1)
         plt.plot([0, 1], [0, 1], 'k--')
@@ -186,8 +236,7 @@ class ImagesClassifier:
         plt.legend(loc='best')
         plt.show()
 
-    @staticmethod
-    def __plot_training_statistics(history):
+    def __plot_training_statistics(self, history):
         plt.plot(history.history['binary_accuracy'])
         plt.plot(history.history['val_binary_accuracy'])
         plt.title('Model accuracy during training')
@@ -204,9 +253,51 @@ class ImagesClassifier:
         plt.legend(['train set', 'validation set'], loc='upper left')
         plt.show()
 
+        precision = history.history['precision']
+        val_precision = history.history['val_precision']
+        recall = history.history['recall']
+        val_recall = history.history['val_recall']
+
+        plt.plot(precision)
+        plt.plot(val_precision)
+        plt.title('Model precision during training')
+        plt.ylabel('precision')
+        plt.xlabel('epoch')
+        plt.legend(['train set', 'validation set'], loc='upper left')
+        plt.show()
+
+        plt.plot(recall)
+        plt.plot(val_recall)
+        plt.title('Model recall during training')
+        plt.ylabel('recall')
+        plt.xlabel('epoch')
+        plt.legend(['train set', 'validation set'], loc='upper left')
+        plt.show()
+
+        f2_score = self.__calculate_list_of_f_score_metrics(precision, recall, beta=2)
+        val_f2_score = self.__calculate_list_of_f_score_metrics(val_precision, val_recall, beta=2)
+
+        plt.plot(f2_score)
+        plt.plot(val_f2_score)
+        plt.title('Model f2-score during training')
+        plt.ylabel('f2-score')
+        plt.xlabel('epoch')
+        plt.legend(['train set', 'validation set'], loc='upper left')
+        plt.show()
+
+    def __calculate_list_of_f_score_metrics(self, precision_list, recall_list, beta=1):
+        f_score_list = []
+        for i in range(len(precision_list)):
+            result = self.__calculate_f_score_metric(precision_list[i], recall_list[i], beta)
+            f_score_list.append(result)
+
+        return f_score_list
+
     def __save_model(self, model: Model):
         model.save(self.model_filename)
+        print(f'{self.log_name} Saved model {self.model_filename}')
 
     def __load_model(self):
         model = tf.keras.models.load_model(self.model_filename)
+        print(f'{self.log_name} Loaded model {self.model_filename}')
         return model
