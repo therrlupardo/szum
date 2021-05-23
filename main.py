@@ -62,7 +62,7 @@ def __use_disk_images_classifier(disk_images_classifier: DiskImagesClassifier, d
         disk_images_classifier.create_model(*data_generators)
     else:
         train_data_generator, val_data_generator, test_data_generator = data_generators
-        disk_images_classifier.use_model(train_data_generator)
+        disk_images_classifier.use_model(test_data_generator)
 
 
 # DATA IN MEMORY

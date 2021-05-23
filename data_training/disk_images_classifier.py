@@ -6,7 +6,7 @@ import tensorflow as tf
 from sklearn import metrics
 from sklearn.metrics import roc_curve, auc
 from tensorflow.keras import Model
-from tensorflow.python.keras.layers import Dense, Flatten, Softmax
+from tensorflow.python.keras.layers import Dense, Flatten
 from tensorflow.python.keras.preprocessing.image import DirectoryIterator
 from tensorflow.python.keras.regularizers import L1L2
 
@@ -14,7 +14,7 @@ from tensorflow.python.keras.regularizers import L1L2
 class DiskImagesClassifier:
     log_name = '[DATA TRAINING][IMAGE CLASSIFIER]'
 
-    epochs = 5
+    epochs = 20
 
     def __init__(self, model_filename):
         self.model_filename = model_filename
@@ -66,7 +66,6 @@ class DiskImagesClassifier:
 
         x = Flatten()(x)
         x = Dense(2, kernel_regularizer=L1L2(l1=0.0, l2=0.1))(x)
-        # outputs = Softmax()(x)
         outputs = Dense(1, activation='sigmoid')(x)
 
         model = Model(inputs, outputs)

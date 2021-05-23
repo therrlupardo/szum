@@ -210,15 +210,13 @@ class DiskDatasetSplitter:
         image_rotation = 20
 
         if mock_generator:
-            data_generator = keras.preprocessing.image.ImageDataGenerator(
-                # rescale=1. / 255
-            )
+            data_generator = keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
         else:
             data_generator = keras.preprocessing.image.ImageDataGenerator(featurewise_center=False,
                                                                           featurewise_std_normalization=False,
                                                                           height_shift_range=image_shift,
                                                                           horizontal_flip=True,
-                                                                          # rescale=1. / 255,
+                                                                          rescale=1. / 255,
                                                                           rotation_range=image_rotation,
                                                                           width_shift_range=image_shift,
                                                                           zca_whitening=False)
