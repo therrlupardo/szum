@@ -22,8 +22,8 @@ def disk_data_splitting():
 
     disk_dataset_splitter = DiskDatasetSplitter()
     disk_dataset_splitter.create_and_save_split1(disk_dataset)
-    disk_dataset_splitter.create_and_save_split2(disk_dataset)
-    disk_dataset_splitter.create_and_save_split3(disk_dataset)
+    # disk_dataset_splitter.create_and_save_split2(disk_dataset)
+    # disk_dataset_splitter.create_and_save_split3(disk_dataset)
 
 
 def disk_data_training():
@@ -32,7 +32,7 @@ def disk_data_training():
     disk_images_classifier = DiskImagesClassifier(
         '/home/dominika/Documents/sem.1 mgr/SzUM/projekt/szum_crosswalk_detection/model1-80k-epoch5')
 
-    batch_size = 32
+    batch_size = 16
 
     use_disk_split1(disk_dataset_splitter, disk_images_classifier, batch_size=batch_size, create_model=True)
     # use_disk_split2(disk_dataset_splitter, disk_images_classifier, batch_size=batch_size, create_model=True)
@@ -41,19 +41,19 @@ def disk_data_training():
 
 def use_disk_split1(disk_dataset_splitter: DiskDatasetSplitter, disk_images_classifier: DiskImagesClassifier,
                     batch_size=32, create_model=True):
-    data_generators = disk_dataset_splitter.create_split1_data_generators(batch_size=batch_size)
+    data_generators = disk_dataset_splitter.create_split1_data_generators(not create_model, batch_size=batch_size)
     __use_disk_images_classifier(disk_images_classifier, data_generators, create_model)
 
 
 def use_disk_split2(disk_dataset_splitter: DiskDatasetSplitter, disk_images_classifier: DiskImagesClassifier,
                     batch_size=32, create_model=True):
-    data_generators = disk_dataset_splitter.create_split2_data_generators(batch_size=batch_size)
+    data_generators = disk_dataset_splitter.create_split2_data_generators(not create_model, batch_size=batch_size)
     __use_disk_images_classifier(disk_images_classifier, data_generators, create_model)
 
 
 def use_disk_split3(disk_dataset_splitter: DiskDatasetSplitter, disk_images_classifier: DiskImagesClassifier,
                     batch_size=32, create_model=True):
-    data_generators = disk_dataset_splitter.create_split3_data_generators(batch_size=batch_size)
+    data_generators = disk_dataset_splitter.create_split3_data_generators(not create_model, batch_size=batch_size)
     __use_disk_images_classifier(disk_images_classifier, data_generators, create_model)
 
 
@@ -62,7 +62,7 @@ def __use_disk_images_classifier(disk_images_classifier: DiskImagesClassifier, d
         disk_images_classifier.create_model(*data_generators)
     else:
         train_data_generator, val_data_generator, test_data_generator = data_generators
-        disk_images_classifier.use_model(test_data_generator)
+        disk_images_classifier.use_model(train_data_generator)
 
 
 # DATA IN MEMORY
@@ -82,9 +82,9 @@ def data_training():
     images_classifier = ImagesClassifier(
         '/home/dominika/Documents/sem.1 mgr/SzUM/projekt/szum_crosswalk_detection/model1-80k-epoch5')
 
-    use_split1(dataset, dataset_splitter, images_classifier, create_model=False)
+    # use_split1(dataset, dataset_splitter, images_classifier, create_model=False)
     # use_split2(dataset, dataset_splitter, images_classifier)
-    # use_split3(dataset, dataset_splitter, images_classifier)
+    use_split3(dataset, dataset_splitter, images_classifier)
 
 
 def use_split1(dataset, dataset_splitter: DatasetSplitter, images_classifier: ImagesClassifier, create_model=True):

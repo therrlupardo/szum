@@ -20,21 +20,21 @@ class DiskDatasetSplitter:
     val_set_size = 0.1
     test_set_size = train_set_size - val_set_size
 
-    def create_split1_data_generators(self, batch_size=16):
+    def create_split1_data_generators(self, mock_generator, batch_size=16):
         train_data_generator, val_data_generator, test_data_generator = self.__create_split_data_generators(
-            self.destination_splits_directories[0], batch_size, mock_generator=True)
+            self.destination_splits_directories[0], batch_size, mock_generator=mock_generator)
 
         return train_data_generator, val_data_generator, test_data_generator
 
-    def create_split2_data_generators(self, batch_size=16):
+    def create_split2_data_generators(self, mock_generator, batch_size=16):
         train_data_generator, val_data_generator, test_data_generator = self.__create_split_data_generators(
-            self.destination_splits_directories[1], batch_size, mock_generator=False)
+            self.destination_splits_directories[1], batch_size, mock_generator=mock_generator)
 
         return train_data_generator, val_data_generator, test_data_generator
 
-    def create_split3_data_generators(self, batch_size=16):
+    def create_split3_data_generators(self, mock_generator, batch_size=16):
         train_data_generator, val_data_generator, test_data_generator = self.__create_split_data_generators(
-            self.destination_splits_directories[2], batch_size, mock_generator=False)
+            self.destination_splits_directories[2], batch_size, mock_generator=mock_generator)
 
         return train_data_generator, val_data_generator, test_data_generator
 
@@ -45,19 +45,25 @@ class DiskDatasetSplitter:
         train_datagen = self.__create_image_data_generator(mock_generator=mock_generator)
         train_data_generator = train_datagen.flow_from_directory(destination_path, batch_size=batch_size,
                                                                  target_size=(72, 128),
-                                                                 class_mode='categorical')
+                                                                 shuffle=False,
+                                                                 classes=['0', '1'],
+                                                                 class_mode='binary')
 
         destination_path = os.path.join(destination, self.destination_datasets_directories[1])
         val_datagen = self.__create_image_data_generator(mock_generator=True)
         val_data_generator = val_datagen.flow_from_directory(destination_path, batch_size=batch_size,
                                                              target_size=(72, 128),
-                                                             class_mode='categorical')
+                                                             shuffle=False,
+                                                             classes=['0', '1'],
+                                                             class_mode='binary')
 
         destination_path = os.path.join(destination, self.destination_datasets_directories[2])
         test_datagen = self.__create_image_data_generator(mock_generator=True)
         test_data_generator = test_datagen.flow_from_directory(destination_path, batch_size=batch_size,
                                                                target_size=(72, 128),
-                                                               class_mode='categorical')
+                                                               shuffle=False,
+                                                               classes=['0', '1'],
+                                                               class_mode='binary')
 
         return train_data_generator, val_data_generator, test_data_generator
 
@@ -104,7 +110,6 @@ class DiskDatasetSplitter:
             image_path = os.path.join(destination_path, str(labels[i]), filenames[i])
             image = Image.fromarray(images[i])
             image.save(image_path)
-            # imageio.imwrite(image_path, images[i])
 
     def _split1(self, entries_list, shuffle_datasets=True, merge_datasets=False):
         print(f'{self.log_name} Splitting dataset into split1')
@@ -163,7 +168,7 @@ class DiskDatasetSplitter:
 
         dataset = self._split2(entries_list, shuffle_datasets, merge_datasets=True)
 
-        print(f'{self.log_name} Finished splitting dataset into split2')
+        print(f'{self.log_name} Finished splitting dataset into split3')
         return dataset
 
     @staticmethod
@@ -205,13 +210,15 @@ class DiskDatasetSplitter:
         image_rotation = 20
 
         if mock_generator:
-            data_generator = keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
+            data_generator = keras.preprocessing.image.ImageDataGenerator(
+                # rescale=1. / 255
+            )
         else:
             data_generator = keras.preprocessing.image.ImageDataGenerator(featurewise_center=False,
                                                                           featurewise_std_normalization=False,
                                                                           height_shift_range=image_shift,
                                                                           horizontal_flip=True,
-                                                                          rescale=1. / 255,
+                                                                          # rescale=1. / 255,
                                                                           rotation_range=image_rotation,
                                                                           width_shift_range=image_shift,
                                                                           zca_whitening=False)

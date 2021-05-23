@@ -51,7 +51,7 @@ class DiskImagesClassifier:
 
         print(f'{self.log_name} Started prediction on loaded model')
         self.__evaluate_model_with_generator(model, generator)
-        self.__predict_model_with_generator(model, generator)
+        # self.__predict_model_with_generator(model, generator)
         print(f'{self.log_name} Finished prediction on loaded model')
 
         print(f'{self.log_name} Finished test image classification')
@@ -66,13 +66,18 @@ class DiskImagesClassifier:
 
         x = Flatten()(x)
         x = Dense(2, kernel_regularizer=L1L2(l1=0.0, l2=0.1))(x)
-        outputs = Softmax()(x)
+        # outputs = Softmax()(x)
+        outputs = Dense(1, activation='sigmoid')(x)
 
         model = Model(inputs, outputs)
         model.compile(optimizer=tf.keras.optimizers.Adam(),
                       loss='binary_crossentropy',
                       metrics=[tf.keras.metrics.BinaryAccuracy(), tf.keras.metrics.BinaryCrossentropy(),
-                               tf.keras.metrics.AUC(), tf.keras.metrics.Precision(), tf.keras.metrics.Recall()])
+                               tf.keras.metrics.AUC(), tf.keras.metrics.Precision(), tf.keras.metrics.Recall(),
+                               tf.keras.metrics.TruePositives(), tf.keras.metrics.TrueNegatives(),
+                               tf.keras.metrics.FalsePositives(), tf.keras.metrics.FalseNegatives()])
+
+        model.summary()
 
         return model
 
@@ -85,7 +90,7 @@ class DiskImagesClassifier:
 
         print(f'{self.log_name} Started prediction on testing set')
         self.__evaluate_model_with_generator(model, test_generator)
-        self.__predict_model_with_generator(model, test_generator)
+        # self.__predict_model_with_generator(model, test_generator)
         print(f'{self.log_name} Finished prediction on testing set')
 
         elapsed_time = timer() - start_time
